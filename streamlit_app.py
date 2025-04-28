@@ -1,3 +1,11 @@
+# CoinDCX Branding Campaign Analysis App
+# 
+# Installation requirements:
+# pip install streamlit pandas plotly numpy
+# For Excel support: pip install openpyxl
+#
+# Run with: streamlit run this_file.py
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -5,6 +13,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import numpy as np
 from datetime import datetime, timedelta
+import io
 
 # Set page configuration
 st.set_page_config(
@@ -27,10 +36,12 @@ st.header("Data Upload")
 col1, col2 = st.columns(2)
 
 with col1:
-    competitors_file = st.file_uploader("Upload Competitor Search Data (Excel)", type=["xlsx", "xls"])
+    competitors_file = st.file_uploader("Upload Competitor Search Data (Excel/CSV)", type=["xlsx", "xls", "csv"])
+    competitors_format = st.radio("Competitor File Format", ["CSV", "Excel"], horizontal=True, key="comp_format")
 
 with col2:
-    campaign_file = st.file_uploader("Upload Campaign Metrics Data (Excel)", type=["xlsx", "xls"])
+    campaign_file = st.file_uploader("Upload Campaign Metrics Data (Excel/CSV)", type=["xlsx", "xls", "csv"])
+    campaign_format = st.radio("Campaign File Format", ["CSV", "Excel"], horizontal=True, key="camp_format")
 
 # Function to clean and process competitor data
 def process_competitor_data(df):
@@ -73,12 +84,36 @@ def process_campaign_data(df):
 # Process data if files are uploaded
 if competitors_file and campaign_file:
     # Load competitor data
-    comp_df = pd.read_excel(competitors_file)
-    comp_df = process_competitor_data(comp_df)
+    try:
+        if competitors_format == "CSV":
+            comp_df = pd.read_csv(competitors_file)
+        else:
+            # For Excel files, try using pandas directly or fallback to alternative methods
+            try:
+                comp_df = pd.read_excel(competitors_file)
+            except ImportError:
+                st.error("Excel library (openpyxl) not available. Please use CSV format or install openpyxl.")
+                st.stop()
+        comp_df = process_competitor_data(comp_df)
+    except Exception as e:
+        st.error(f"Error processing competitor data: {e}")
+        st.stop()
     
     # Load campaign data
-    campaign_df = pd.read_excel(campaign_file)
-    campaign_df = process_campaign_data(campaign_df)
+    try:
+        if campaign_format == "CSV":
+            campaign_df = pd.read_csv(campaign_file)
+        else:
+            # For Excel files, try using pandas directly or fallback to alternative methods
+            try:
+                campaign_df = pd.read_excel(campaign_file)
+            except ImportError:
+                st.error("Excel library (openpyxl) not available. Please use CSV format or install openpyxl.")
+                st.stop()
+        campaign_df = process_campaign_data(campaign_df)
+    except Exception as e:
+        st.error(f"Error processing campaign data: {e}")
+        st.stop()
     
     # Display the clean data
     st.header("Processed Data")
