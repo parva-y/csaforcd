@@ -4,4 +4,3 @@ plotly
 numpy
 datetime 
 openpyxl
-io
