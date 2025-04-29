@@ -1,165 +1,90 @@
+import streamlit as st
 import pandas as pd
 import numpy as np
-import random
-from datetime import datetime, timedelta
+import statsmodels.api as sm
+from datetime import datetime
 
-def generate_competitor_data(start_date='2024-09-01', num_days=30):
-    """
-    Generate sample competitor search data with the same schema
-    """
-    # Create date range
-    dates = [datetime.strptime(start_date, '%Y-%m-%d') + timedelta(days=i) for i in range(num_days)]
-    
-    # Create dataframe with dates
-    df = pd.DataFrame({'Date': dates})
-    
-    # Define competitors
-    competitors = [
-        'Angel One', 'Binance', 'CoinDCX', 'Coinswitch', 'Delta Exchange', 
-        'Dhan', 'Groww', 'Lemonn', 'Upstox', 'WazirX', 'Zerodha', 'Mudrex'
-    ]
-    
-    # Define search terms
-    search_terms = [
-        'Cryptocurrency', 'Mutual fund', 'Stock Market', 'Bitcoin'
-    ]
-    
-    # Add columns for competitors with random search volumes
-    for comp in competitors:
-        # Base value that increases steadily
-        base = random.randint(1000, 5000)
-        # Generate search volumes with some randomness
-        df[comp] = [base + int(np.random.normal(i*10, 200)) for i in range(num_days)]
-        # Ensure no negative values
-        df[comp] = df[comp].apply(lambda x: max(0, x))
-    
-    # Add columns for search terms
-    for term in search_terms:
-        # Higher base values for general search terms
-        base = random.randint(8000, 15000)
-        # Generate search volumes with some randomness
-        df[term] = [base + int(np.random.normal(i*15, 500)) for i in range(num_days)]
-        # Ensure no negative values
-        df[term] = df[term].apply(lambda x: max(0, x))
-    
-    # Add CoinDCX installs column
-    df['Installs - DCX'] = [random.randint(4000, 6000) for _ in range(num_days)]
-    
-    # Format dates to match the example format (dd/mm/yyyy)
-    df['Date'] = df['Date'].dt.strftime('%d/%m/%Y')
-    
-    return df
+st.title("CoinDCX Branding Campaign Impact Dashboard")
 
-def generate_campaign_data(start_date='2024-10-01', num_days=15):
-    """
-    Generate sample campaign data with the same schema
-    """
-    # Create date range
-    dates = [datetime.strptime(start_date, '%Y-%m-%d') + timedelta(days=i) for i in range(num_days)]
-    
-    # First section: Top Impact/Roadblock
-    header_row = pd.DataFrame({
-        0: ['Top Impact/ Roadblock'],
-        1: ['Top ROS'],
-        2: ['Date'],
-        3: ['All Impressions'],
-        4: ['All Spends'],
-    })
-    
-    # Add platform columns to the header
-    platforms = [
-        'Moneycontrol', 'ET Now', 'Good Returns', 'HT', 'ET', 
-        'Vi', 'MIQ', 'ET', 'Good Returns', 'Dailyhunt', 'Moneycontrol', 'PayTM'
-    ]
-    
-    for platform in platforms:
-        header_row[len(header_row.columns)] = [f"{platform} Imp"]
-        header_row[len(header_row.columns)] = [f"{platform} Spends"]
-    
-    # Add an empty row
-    empty_row = pd.DataFrame([[''] * len(header_row.columns)])
-    
-    # Second section: Date and metrics
-    metrics_header = pd.DataFrame({
-        0: ['Date'],
-        1: ['Impressions'],
-        2: ['Spends']
-    })
-    
-    # Generate daily metrics
-    metrics_data = []
-    for date in dates:
-        # For the first 5 days, no campaign activity
-        if date < datetime.strptime(start_date, '%Y-%m-%d') + timedelta(days=5):
-            impressions = 0
-            spends = 0
-        else:
-            # Random impressions between 100,000 and 700,000
-            impressions = random.randint(100000, 700000)
-            # Random spend between 10,000 and 90,000
-            spends = random.randint(10000, 90000)
-        
-        # Format with commas
-        impressions_str = f"{impressions:,}" if impressions > 0 else ""
-        spends_str = f"{spends:,}" if spends > 0 else ""
-        
-        metrics_data.append([date.strftime('%d/%m/%Y'), impressions_str, spends_str])
-    
-    metrics_df = pd.DataFrame(metrics_data)
-    
-    # Combine all sections to create the final dataframe
-    # We'll use a workaround for the complex structure
-    
-    # First, save all sections to CSV
-    header_row.to_csv('temp_header.csv', index=False, header=False)
-    empty_row.to_csv('temp_empty.csv', index=False, header=False)
-    metrics_header.to_csv('temp_metrics_header.csv', index=False, header=False)
-    metrics_df.to_csv('temp_metrics.csv', index=False, header=False)
-    
-    # Now read them back with the right settings
-    import os
-    
-    with open('temp_header.csv', 'r') as f1, \
-         open('temp_empty.csv', 'r') as f2, \
-         open('temp_metrics_header.csv', 'r') as f3, \
-         open('temp_metrics.csv', 'r') as f4, \
-         open('temp_combined.csv', 'w') as out:
-        out.write(f1.read())
-        out.write(f2.read())
-        out.write(f3.read())
-        out.write(f4.read())
-    
-    combined_df = pd.read_csv('temp_combined.csv', header=None)
-    
-    # Clean up temporary files
-    for file in ['temp_header.csv', 'temp_empty.csv', 'temp_metrics_header.csv', 'temp_metrics.csv', 'temp_combined.csv']:
-        if os.path.exists(file):
-            os.remove(file)
-    
-    return combined_df
+# Upload section
+search_file = st.file_uploader("Upload Search Volume CSV", type=["csv"])
+spends_file = st.file_uploader("Upload Campaign Spends CSV", type=["csv"])
+campaign_file = st.file_uploader("Upload Campaign Details CSV", type=["csv"])
 
-if __name__ == "__main__":
-    # Generate sample data
-    print("Generating sample competitor data...")
-    competitors_df = generate_competitor_data()
-    
-    print("Generating sample campaign data...")
-    campaign_df = generate_campaign_data()
-    
-    # Save to CSV
-    competitors_df.to_csv('sample_competitor_data.csv', index=False)
-    campaign_df.to_csv('sample_campaign_data.csv', index=False, header=False)
-    
-    print("Sample data generated:")
-    print("1. sample_competitor_data.csv")
-    print("2. sample_campaign_data.csv")
-    
-    try:
-        # Try to save as Excel if openpyxl is available
-        competitors_df.to_excel('sample_competitor_data.xlsx', index=False)
-        campaign_df.to_excel('sample_campaign_data.xlsx', index=False, header=False)
-        print("3. sample_competitor_data.xlsx")
-        print("4. sample_campaign_data.xlsx")
-    except Exception as e:
-        print(f"Could not save as Excel: {e}")
-        print("Install openpyxl to enable Excel output: pip install openpyxl")
+if search_file and spends_file:
+    # Load and preprocess
+    search_df = pd.read_csv(search_file)
+    spends_df = pd.read_csv(spends_file)
+
+    search_df['Date'] = pd.to_datetime(search_df['Date'], dayfirst=True, errors='coerce')
+    spends_df['Date'] = pd.to_datetime(spends_df['Date'], dayfirst=True, errors='coerce')
+
+    merged = search_df[['Date', 'CoinDCX', 'Installs - DCX']].merge(
+        spends_df[['Date', 'Spends']], on='Date', how='left')
+
+    merged['Spends'] = pd.to_numeric(merged['Spends'], errors='coerce').fillna(0)
+    merged['CoinDCX'] = pd.to_numeric(merged['CoinDCX'], errors='coerce')
+    merged['Installs - DCX'] = pd.to_numeric(merged['Installs - DCX'], errors='coerce')
+
+    # Date boundaries
+    campaign_start = datetime(2024, 11, 11)
+    campaign_end = datetime(2025, 3, 23)
+
+    merged['during_campaign'] = ((merged['Date'] >= campaign_start) & (merged['Date'] <= campaign_end)).astype(int)
+    merged['time_index'] = np.arange(len(merged))
+    merged['time_post_campaign'] = merged['time_index'] * merged['during_campaign']
+
+    st.subheader("Interrupted Time Series (ITS) Analysis")
+    if st.button("Run ITS Model"):
+        its_df = merged[['CoinDCX', 'time_index', 'during_campaign', 'time_post_campaign']].dropna()
+        X = sm.add_constant(its_df[['time_index', 'during_campaign', 'time_post_campaign']])
+        y = its_df['CoinDCX']
+        model = sm.OLS(y, X).fit()
+        st.text(model.summary())
+
+    st.subheader("Difference-in-Differences (DiD) Setup")
+    competitors = ['Angel One', 'Binance', 'Coinswitch', 'Delta Exchange', 'Dhan',
+                   'Groww', 'Lemonn', 'Upstox', 'WazirX', 'Zerodha', 'Mudrex']
+
+    if st.button("Run DiD Model"):
+        long_df = pd.melt(search_df, id_vars=['Date'], value_vars=['CoinDCX'] + competitors,
+                          var_name='brand', value_name='search_volume')
+        long_df['is_CoinDCX'] = (long_df['brand'] == 'CoinDCX').astype(int)
+        long_df['during_campaign'] = ((long_df['Date'] >= campaign_start) & (long_df['Date'] <= campaign_end)).astype(int)
+        long_df['DiD_interaction'] = long_df['is_CoinDCX'] * long_df['during_campaign']
+        long_df['search_volume'] = pd.to_numeric(long_df['search_volume'], errors='coerce')
+        did_df = long_df.dropna(subset=['search_volume'])
+
+        X_did = sm.add_constant(did_df[['is_CoinDCX', 'during_campaign', 'DiD_interaction']])
+        y_did = did_df['search_volume']
+        did_model = sm.OLS(y_did, X_did).fit()
+        st.text(did_model.summary())
+
+    st.subheader("ROI Calculator")
+    if st.checkbox("Show ROI Estimates"):
+        before_avg = merged.loc[merged['during_campaign'] == 0, 'Installs - DCX'].mean()
+        during_avg = merged.loc[merged['during_campaign'] == 1, 'Installs - DCX'].mean()
+        incremental_installs = during_avg - before_avg
+        total_spends = merged.loc[merged['during_campaign'] == 1, 'Spends'].sum()
+
+        st.metric("Incremental Installs per Day", f"{incremental_installs:.0f}")
+        st.metric("Total Spends During Campaign", f"₹{total_spends:,.0f}")
+        if total_spends > 0:
+            st.metric("Cost per Incremental Install", f"₹{(total_spends / (incremental_installs * len(merged[merged['during_campaign'] == 1]))):.2f}")
+
+    st.subheader("Regression: Predict Searches")
+    if st.button("Run Regression Model"):
+        reg_df = merged.dropna(subset=['CoinDCX', 'Spends'])
+        X_reg = sm.add_constant(reg_df[['Spends', 'during_campaign']])
+        y_reg = reg_df['CoinDCX']
+        reg_model = sm.OLS(y_reg, X_reg).fit()
+        st.text(reg_model.summary())
+
+    st.subheader("Granger Causality: Does Spend Predict Searches?")
+    if st.button("Run Granger Test"):
+        from statsmodels.tsa.stattools import grangercausalitytests
+        granger_df = merged[['CoinDCX', 'Spends']].dropna()
+        granger_result = grangercausalitytests(granger_df, maxlag=5, verbose=False)
+        for lag in granger_result:
+            f_test = granger_result[lag][0]['ssr_ftest']
+            st.write(f"Lag {lag} - F-stat: {f_test[0]:.2f}, p-value: {f_test[1]:.4f}")
